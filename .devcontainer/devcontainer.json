@@ -15,7 +15,7 @@
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "python --version",
-	"postCreateCommand": "conda init bash",// "conda activate base",
+	// "postCreateCommand": "conda init bash",// "conda activate base",
 	
 
 	// Configure tool-specific properties.

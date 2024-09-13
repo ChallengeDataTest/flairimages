@@ -7,7 +7,9 @@ COPY .devcontainer/environment.yml .devcontainer/noop.txt /tmp/conda-tmp/
 RUN if [ -f "/tmp/conda-tmp/environment.yml" ];  then umask 0002 && /opt/conda/bin/conda env update -n base -f /tmp/conda-tmp/environment.yml; fi \
     && rm -rf /tmp/conda-tmp
 
-# RUN conda init bash
+# (O.S.) this is supposed to make conda work in the shell
+# probably not needed
+RUN conda init bash
 
 
 # [Optional] Uncomment this section to install additional OS packages.
