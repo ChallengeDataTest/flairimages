@@ -3,6 +3,7 @@ data/
 !data/.gitkeep
 outputs/
 !outputs/.gitkeep
+.virtual_documents/
 #################################
 
 # Byte-compiled / optimized / DLL files
