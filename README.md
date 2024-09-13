@@ -21,20 +21,15 @@ DOI:https://doi.org/10.13140/RG.2.2.30183.73128/1
 
 ## This project
 
-## directories
+### Configuration
+- Toutes les metadonnées doivent autant que possible être stockées dans le fichier `[racine du projet]/config/config.yaml`.
 
-- `data/` : les données Flair#1
-- `src/` : le code de travail
-- `.devcontainer/` : configuration pour le développement dans un conteneur Docker (VSCode)
-- `.github/` : configuration pour les actions GitHub
-- `outputs/` : les résultats de l'inférence
-
-## working in containers
+### Working in containers
 
 - vscode :
-  - `code .` dans le répertoire racine
-  - `F1` puis `Remote-Containers: Reopen in Container`
-  - retour en local (utile pour Git): `F1` puis `devcontainer: Reopen folder locally`
+  - `code .` dans le répertoire racine sur la machine hôte
+  - `F1` puis `Dev Containers: Reopen in Container`
+  - retour en local (utile pour Git): `F1` puis `Dev Containers: Reopen folder locally`
 
 - Docker + Jupyter lab (superficiellemnt testé):
   - dans le répertoire racine, sous bash:
@@ -58,28 +53,38 @@ DOI:https://doi.org/10.13140/RG.2.2.30183.73128/1
     Or copy and paste one of these URLs:  
         http://localhost:8888/lab?token=dfba5c534dc12f4f0440a3afd221b908fb52025d87a96b99  
         http://127.0.0.1:8888/lab?token=dfba5c534dc12f4f0440a3afd221b908fb52025d87a96b99  
-[...]
+  [...]
   ```
 
-
 ## Description des données
-### masques
+- images: fichiers IMG_[id].tif à 5 canaux (RGB + infrarouge + élévation)
+- masques: fichiers MSK_[id].tif à 1 canal (label)
+- les classes  sont décrites avec leurs regroupements dans le fichier `./config/config.yaml`
 
-| ID  | Description              | Color   |
-|-----|--------------------------|---------|
-| 1   | bâtiment                 | `#db0e9a` ![#db0e9a](data:image/gif;base64,0lGODlhAQABAPAAAMsOmgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 2   | surface perméable        | `#938e7b` ![#938e7b](data:image/gif;base64,R0lGODlhAQABAPAAAJOOewAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 3   | surface imperméable      | `#f80c00` ![#f80c00](data:image/gif;base64,R0lGODlhAQABAPAAAPgMAAAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 4   | sol nu                   | `#a97101` ![#a97101](data:image/gif;base64,R0lGODlhAQABAPAAAKlxAQAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 5   | eau                      | `#1553ae` ![#1553ae](data:image/gif;base64,R0lGODlhAQABAPAAAGVOqQAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 6   | conifère                 | `#194a26` ![#194a26](data:image/gif;base64,R0lGODlhAQABAPAAAGUqJAAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 7   | décidu                   | `#46e483` ![#46e483](data:image/gif;base64,R0lGODlhAQABAPAAAG5+gwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 8   | buisson                  | `#f3a60d` ![#f3a60d](data:image/gif;base64,R0lGODlhAQABAPAAAPOaDQAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 9   | vignoble                 | `#660082` ![#660082](data:image/gif;base64,R0lGODlhAQABAPAAAJgAigAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 10  | végétation herbacée      | `#55ff00` ![#55ff00](data:image/gif;base64,R0lGODlhAQABAPAAAP8A/wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 11  | terre agricole           | `#fff30d` ![#fff30d](data:image/gif;base64,R0lGODlhAQABAPAAAP8A/wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 12  | terre labourée           | `#e4df7c` ![#e4df7c](data:image/gif;base64,R0lGODlhAQABAPAAAP8A/wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 13  | piscine                  | `#3de6eb` ![#3de6eb](data:image/gif;base64,R0lGODlhAQABAPAAAP8A/wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 14  | neige                    | `#ffffff` ![#ffffff](data:image/gif;base64,R0lGODlhAQABAPAAAP8A/wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 15  | coupe à blanc            | `#8ab3a0` ![#8ab3a0](data:image/gif;base64,R0lGODlhAQABAPAAAP8A/wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
-| 16  | mixte                    | `#6b714f` ![#6b714f](data:image/gif;base64,R0lGODlhAQABAPAAAP8A/wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==) |
+### Classes
+(voir [ce notebook](./src/divers_utils.ipynb) pour générer ce tableau)
+
+| Id | Label | Color | Artificiel |  
+|---|-------|-------|---|  
+| 1  | bâtiment | <span style="color:#db0e9a; font-size: 20px;">■</span> `#db0e9a` | X |  
+| 2  | surface perméable | <span style="color:#938e7b; font-size: 20px;">■</span> `#938e7b` | X |  
+| 3  | surface imperméable | <span style="color:#f80c00; font-size: 20px;">■</span> `#f80c00` | X |  
+| 4  | sol nu | <span style="color:#a97101; font-size: 20px;">■</span> `#a97101` |  |  
+| 5  | eau | <span style="color:#1553ae; font-size: 20px;">■</span> `#1553ae` |  |  
+| 6  | conifère | <span style="color:#194a26; font-size: 20px;">■</span> `#194a26` |  |  
+| 7  | feuillu | <span style="color:#46e483; font-size: 20px;">■</span> `#46e483` |  |  
+| 8  | buisson | <span style="color:#f3a60d; font-size: 20px;">■</span> `#f3a60d` |  |  
+| 9  | vignoble | <span style="color:#660082; font-size: 20px;">■</span> `#660082` |  |  
+| 10  | végétation herbacée | <span style="color:#55ff00; font-size: 20px;">■</span> `#55ff00` |  |  
+| 11  | terre agricole | <span style="color:#fff30d; font-size: 20px;">■</span> `#fff30d` |  |  
+| 12  | terre labourée | <span style="color:#e4df7c; font-size: 20px;">■</span> `#e4df7c` |  |  
+| 13  | piscine | <span style="color:#3de6eb; font-size: 20px;">■</span> `#3de6eb` | X |  
+| 14  | neige | <span style="color:#ffffff; font-size: 20px;">■</span> `#ffffff` |  |  
+| 15  | coupe claire | <span style="color:#8ab3a0; font-size: 20px;">■</span> `#8ab3a0` |  |  
+| 16  | mixte | <span style="color:#6b714f; font-size: 20px;">■</span> `#6b714f` |  |  
+| 17  | ligneux | <span style="color:#c5dc42; font-size: 20px;">■</span> `#c5dc42` |  |  
+| 18  | serre | <span style="color:#9999ff; font-size: 20px;">■</span> `#9999ff` | X |  
+| 19  | autre | <span style="color:#000000; font-size: 20px;">■</span> `#000000` |  |  
+
+
+
