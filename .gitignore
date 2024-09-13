@@ -1,6 +1,8 @@
 ##### project specific ignores
 data/
 !data/.gitkeep
+outputs/
+!outputs/.gitkeep
 #################################
 
 # Byte-compiled / optimized / DLL files
