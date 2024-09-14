@@ -1,25 +1,22 @@
-# projects paths
+# projects paths arborescence
+# should be all relative to project's root
+# will be expanded to absolute paths by the code
+# (this to avoid windows/linux path issues)
 paths:
-    root: './'
-    src: './src'
-    config: './config'
-    outputs: './outputs'
-    data:
-        toy: /workspaces/flairimages/data/flair_1_toy_dataset
+    src: ['src']
+    config: ['config']
+    outputs: ['outputs']
+    dataset: ['data','toy']
+    metadata: ['data', 'flair-1_metadata_aerial.json']
+    # will contain list of img and mask files with metadata
+    files_csv: ['data', 'toy','toydataset.csv']
+    files_df: ['data', 'toy','toydataset.pkl']
 
-data: 
-    storage_root_url : "https://storage.gra.cloud.ovh.net/v1/AUTH_366279ce616242ebb14161b7991a8461/defi-ia/flair_data_1"
-    toy:
-        dataset: "flair_1_toy_dataset.zip"
-    full:
-        test:
-          aerial:    "flair_1_aerial_test.zip"
-          labels_test: "flair_labels_test.zip"
-        train:
-            labels_train:   "flair_labels_train.zip"
-            shapes:aerial_train:   "flair_aerial_train.zip"
-        metadata:
-            shapes:  "flair-1_metadata_aerial.zip"
+image_extension: '.tif'
+
+        
+    
+
 
 # this is from https://github.com/IGNF/FLAIR-1/blob/205aa15f48403709af46b0973ea8ae57b5d12eb0/configs/flair-1-config.yaml
 # and https://github.com/IGNF/FLAIR-2/blob/b9b48922bf18c8e3dd93c2ce76120ec4ad40d741/notebook/data_display.py#L23
@@ -78,10 +75,8 @@ nomenclature:
             18 : 'serre'
             19 : 'autre'
     artificiel: [1, 2, 3, 13, 18] # Anthropized surfaces without vegetation
-    naturel: 
-      sans_vegetation: [4, 5, 14]
-      vegetation: [6,7,8,15,16,17]
-    agricole: [9, 11, 12]
+    vegetal: [6, 7, 8, 9, 10, 11, 12, 15, 16, 17, ] # Vegetated surfaces
+    
     # de https://github.com/IGNF/FLAIR-2/blob/b9b48922bf18c8e3dd93c2ce76120ec4ad40d741/notebook/data_display.py#L23
     colors:
         1   : '#db0e9a'

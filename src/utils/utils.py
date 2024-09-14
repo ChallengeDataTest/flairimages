@@ -3,145 +3,183 @@
 import os
 import numpy as np
 import json
-import zipfile
-import requests
-import shutil
 import yaml
 from matplotlib.colors import hex2color
+from pathlib import Path
+from pprint import pprint
+import pandas as pd
 
-#TODO: use info from the config file everywhere in this module
-DATA_URLS = {
-    "toy_dataset": "https://storage.gra.cloud.ovh.net/v1/AUTH_366279ce616242ebb14161b7991a8461/defi-ia/flair_data_1/flair_1_toy_dataset.zip",
-    "aerial_train": "https://storage.gra.cloud.ovh.net/v1/AUTH_366279ce616242ebb14161b7991a8461/defi-ia/flair_data_1/flair_aerial_train.zip",
-    "aerial_test": "https://storage.gra.cloud.ovh.net/v1/AUTH_366279ce616242ebb14161b7991a8461/defi-ia/flair_data_1/flair_1_aerial_test.zip",
-    "labels_train": "https://storage.gra.cloud.ovh.net/v1/AUTH_366279ce616242ebb14161b7991a8461/defi-ia/flair_data_1/flair_labels_train.zip",
-    "labels_test": "https://storage.gra.cloud.ovh.net/v1/AUTH_366279ce616242ebb14161b7991a8461/defi-ia/flair_data_1/flair_labels_test.zip",
-    "aerial_shapes":"https://storage.gra.cloud.ovh.net/v1/AUTH_366279ce616242ebb14161b7991a8461/defi-ia/flair_data_1/flair-1_metadata_aerial.zip",
-    "aerial_metadata":"https://storage.gra.cloud.ovh.net/v1/AUTH_366279ce616242ebb14161b7991a8461/defi-ia/flair_data_1/flair_1_toy_dataset.zip"
-}
-
-def read_config(file_path):
-    with open(file_path, "r") as f:
-        return yaml.safe_load(f)
+def read_config(file_path:Path, root_dir:Path, verbose=True) -> dict:
+    with file_path.open() as f:
+        conf= yaml.safe_load(f)
+    # resolve directories
+    if root_dir is not None:
+        for k, v in conf['paths'].items():
+            conf['paths'][k] = root_dir
+            for sub in v:
+                conf['paths'][k] /= sub
+    # precalculate class to RGB mapping
+    colors = conf['nomenclature']['colors']
+    conf['nomenclature']['class_to_color'] = {k: (np.array(hex2color(v))*255).astype(np.uint8) for k, v in colors.items()}
     
-
-def get_image_paths(image_dir):
-    """
-    Get all image paths in a directory
-    """
-    image_paths = []
-    for root, dirs, files in os.walk(image_dir):
-        for file in files:
-            if file.endswith('.jpg') or file.endswith('.png'):
-                image_paths.append(os.path.join(root, file))
-    return image_paths
-
-
-
-
-
-def download_data(data_dir, type='toy', re_download=False, no_write=True):
-    """
-    Download data
-    """
-    if type not in ["toy", "test", "train", "meta"]:
-        raise ValueError("type must be one of 'toy', 'test', 'train', 'meta'")  
-    if type != "toy":
-        raise NotImplementedError("Only toy data download is available at the moment")
+    if (verbose):
+        print(f"Configuration read from {file_path}")
+        print(f"file locations are:")
+        pprint(conf['paths'])
+    return conf
     
-    if not os.path.exists(data_dir):
-        raise ValueError(f"Directory {data_dir} does not exist")
+    
+def get_metadata_to_df(conf) -> pd.DataFrame:
+    with Path(conf['paths']['metadata']).open('r') as f:
+        data = json.load(f)
+    
+    # Convert JSON data to DataFrame
+    df = pd.DataFrame.from_dict(data, orient='index').convert_dtypes()
+    df.index.name = 'name'
+    return df
+
+    
+def read_samples_df(conf: dict) -> pd.DataFrame:
+    """
+    Read the samples dataframe from disk
+    """
+    df_file = conf['paths']['files_df']
+    df = pd.read_pickle(df_file)
+    return df
+
+def make_samples_df(conf: dict, to_disk=False) -> pd.DataFrame:
+    """
+    Make a sample dataframe of (images, lables) couples 
+    """
+    dataset_dir = Path(conf['paths']['dataset'])
+    
+    
+    
+    df_meta = get_metadata_to_df(conf)
+    
+    
+    # e.g. '.tif'
+    ext = conf['image_extension']
+    
+    df = pd.DataFrame({'name': pd.Series(dtype='str'),
+                   'image': pd.Series(dtype='str'),
+                   'mask': pd.Series(dtype='str')})
+    df.set_index('name', inplace=True)
+    
+    
+    for  file  in dataset_dir.glob("**/*"+ext):
+        stem = file.stem
+        if '_' not in stem:
+            continue
         
-    if type == "toy":
-        url = DATA_URLS['toy_dataset']
-        toy_dataset_zip_filename = url.split("/")[-1]
-        toy_dataset_dir_name = toy_dataset_zip_filename.split(".")[-2]
-        toy_dataset_dir = os.path.join(data_dir, toy_dataset_dir_name)
-        toy_dataset_zip_path = os.path.join(data_dir, toy_dataset_zip_filename)
+        # image files are IMG_XXXX.tif, in various folders
+        # mask files are MSK_XXXX.tif
+        im_or_mask, num_str = file.stem.split("_")
+        name = "IMG_" + num_str 
+        if name not in df_meta.index:
+            print(f"Image {name} for file {file.stem} not found in metadata")
+            continue
+        # update the dataframe
+        if im_or_mask == "IMG":
+            df.at[name, 'image'] = file
+        elif im_or_mask == "MSK":
+            df.at[name, 'mask'] = file
 
-        if not no_write:
-            do_download = True
-            if os.path.exists(toy_dataset_zip_path):
-                if re_download:
-                    os.remove(toy_dataset_zip_path)
-                    print(f"Existing {toy_dataset_zip_path} removed")
-                    do_download = True
-                else:
-                    print(f"{toy_dataset_zip_path} already exists. Set re_download=True to download again")
-                    do_download = False
-            
-            if do_download:
-                print(f"downloading {toy_dataset_zip_path}")
-                response = requests.get(url)
-                with open(toy_dataset_zip_path, 'wb') as f:
-                    f.write(response.content)
-                print("Zip file downloaded successfully: {toy_dataset_zip_path}")
-
-            # unzip the file
-            
-            # check if the directory already exists
-            if os.path.exists(toy_dataset_dir):
-                # remove the existing directory
-                shutil.rmtree(toy_dataset_dir)
-                print(f"Existing {toy_dataset_dir} removed")
-            with zipfile.ZipFile(toy_dataset_zip_path, 'r') as zip_ref:
-                zip_ref.extractall(path=toy_dataset_dir)
-            print(f"Zip file extracted successfully into {toy_dataset_dir}")
+    # merge df and df1 on the index, by intersection
+    # this will drop the rows with missing values
+    df = df.merge(df_meta, left_index=True, right_index=True)    
+    # make csv file 
+    if to_disk:
+        csv_file = conf['paths']['files_csv']
+        df.to_csv(csv_file)
+        print(f"Sample list written to {csv_file}")
+        # make pickle file
+        df_file = conf['paths']['files_df']
+        df.to_pickle(df_file)
+        print(f"dataframe written to {df_file}")
         
-    return toy_dataset_dir
+    return df
+
+
+
+
+def make_nomenclature_html(config, output_file=None):
+    """
+    Make an HTML file of the mask convention
+    """
+    colors = config['nomenclature']['colors']
+    labels = config['nomenclature']['classes']['french']   
+    artificiel_classes = config['nomenclature']['artificiel']
+    vegetal_classes = config['nomenclature']['vegetal']
     
+    
+    out = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+            font-family: Arial, sans-serif;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                table-layout: auto;
+            }
+            th, td {
+                text-align: left;
+                border: 1px solid black;
+                padding: 8px;
+            }
+        </style>
+    </head>
+    <body>"""
 
-def make_sample_table(dataset_dir, sample_list_file=None, no_write=True):
-    """
-    Make a sample table of (images, lables) couples 
-    """
-    # 
-    # make a flat list of all files in the dataset directory
-    if sample_list_file is None:
-        sample_list_file = os.path.join(dataset_dir, "sample_list.csv") 
+    out+="<table><tr><th>Classe</th><th>Label</th><th>Color</th><th>Artificiel</th><th>Végétation</th></tr>"
+    out+="\n"
 
-    if not no_write:    
-        all_images = {}
-        all_masks = {}
-        for root, dirs, files in os.walk(dataset_dir):
-            for file in files:
-                # for instance IMG_061946.tif
-                # the key is 061946         
-                im_or_mask, key = file.split(".")[-2].split("_")
-                if im_or_mask == "IMG":
-                    all_images[key] = os.path.join(root, file)
-                elif im_or_mask == "MSK":
-                    all_masks[key] = os.path.join(root, file)
-        #    
-        # make csv file of (key, im, msk triplets), sorted by key
-        with open(sample_list_file, 'w') as f:
-            f.write("KEY, IMG, MSK\n")
-            for key in sorted(list(all_images.keys())):
-                # this is to prevent csv reading to interpret the key as a number
-                # with the risk of losing leading zeros and creating collisions
-                txt_key = 'I'+key
-                f.write(f"{txt_key},{all_images[key]},{all_masks[key]}\n")
-        print(f"Sample list written to {sample_list_file}")
-
-    return sample_list_file
+    for id, label in labels.items():
+        color = colors[id]
+        artificiel = 'X' if id in artificiel_classes else ""
+        vegetal = 'X' if id in vegetal_classes else ""
+        out+=f"<tr>"
+        out+=f"<td>{id}</td><td>{label}</td>"
+        out+=f"<td><span style=\"color:{color}; font-size: 20px;\">■</span> {color}</td>"
+        out+=f"<td>{artificiel}</td>"
+        out+=f"<td>{vegetal}</td>"
+        out+="</tr>\n"
+    
+    out+="</table>\n"
+    out+="</body></html>"
+    if output_file is not None:
+        with open(output_file, 'w') as f:
+            f.write(out)
+        print(f"Nomenclature table written to {output_file}")
+    #
+    return out
 
 
-
-
-def make_mask_convention_markdown(config, output_file=None):
+def make_nomenclature_markdown(config, output_file=None):
     """
     Make a markdown file of the mask convention
     """
     colors = config['nomenclature']['colors']
     labels = config['nomenclature']['classes']['french']   
-    artificiels = config['nomenclature']['artificiel']
+    artificiel_classes = config['nomenclature']['artificiel']
+    vegetal_classes = config['nomenclature']['vegetal']
     out = []
-    out.append("| Id | Label | Color | Artificiel |  ")
-    out.append("|---|-------|-------|---|  ")
+    out.append("| Classe | Label | Color | Artificiel | Végétal |  ")
+    out.append("|---|-------|-------|---|---| ")
     for id, label in labels.items():
         color = colors[id]
-        artificiel = 'X' if id in artificiels else ""
-        out.append(f"| {id}  | {label} | <span style=\"color:{color}; font-size: 20px;\">■</span> `{color}` | {artificiel} |  ")
+        artificiel = 'X' if id in artificiel_classes else ""
+        vegetal = 'X' if id in vegetal_classes else ""
+        out.append(f"| {id}  | {label} |"+
+                   f"<span style=\"color:{color}; font-size: 20px;\">■</span> `{color}` |"+
+                   f" {artificiel} |"+
+                   f" {vegetal} ")
     out = "\n".join(out)
     if output_file is not None:
         with open(output_file, 'w') as f:
@@ -150,21 +188,28 @@ def make_mask_convention_markdown(config, output_file=None):
     return out
 
 
-def convert_to_color(arr_2d: np.ndarray, palette: dict ) -> np.ndarray:
-    rgb_palette = {k: tuple(int(i * 255) for i in hex2color(v)) for k, v in palette.items()}
+
+
+def convert_to_color(arr_2d: np.ndarray, config:dict ) -> np.ndarray:
     arr_3d = np.zeros((arr_2d.shape[0], arr_2d.shape[1], 3), dtype=np.uint8)
-    for c, i in rgb_palette.items():
-        m = arr_2d == c
-        arr_3d[m] = i
+    for cls, color in config['nomenclature']['class_to_color'].items():
+        arr_3d[arr_2d == cls,:] = color
     return arr_3d
 
 
 def convert_to_artificiel(arr_2d: np.ndarray, conf: dict ) -> np.ndarray:
     arr_3d = np.zeros((arr_2d.shape[0], arr_2d.shape[1], 3), dtype=np.uint8)
-    for c in conf['nomenclature']['classes']['french'].keys():
-        artificial = c in conf['nomenclature']['artificiel']
-        m = (arr_2d == c)
-        arr_3d[m] = np.array([255, 0, 0]) if artificial else np.array([0, 255, 0]) 
-    return arr_3d
+    # termwise sum of booleans
+    where = np.sum([arr_2d == c for c in conf['nomenclature']['artificiel']], axis=0)
+    where = np.expand_dims(where, axis=-1)
+    arr_3d = where* np.array([[[255, 0, 0]]]) + (1-where)* np.array([[[0, 0, 255]]])
+    return arr_3d.astype(np.uint8)
+
+def convert_to_vegetal(arr_2d: np.ndarray, conf: dict ) -> np.ndarray:
+    where = np.sum([arr_2d == c for c in conf['nomenclature']['vegetal']], axis=0)
+    where = np.expand_dims(where, axis=-1)
+    arr_3d = where* np.array([[[0, 255, 0]]]) + (1-where)* np.array([[[0, 0, 255]]])
+    return arr_3d.astype(np.uint8)
+    
     
     
