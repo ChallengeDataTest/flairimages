@@ -75,10 +75,11 @@ nomenclature:
             18 : 'serre'
             19 : 'autre'
     artificiel: [1, 2, 3, 13, 18] # Anthropized surfaces without vegetation
+    artificiel_rgb: [[127,127,127], [255,0,0]] # grey, red
     vegetal: [6, 7, 8, 9, 10, 11, 12, 15, 16, 17, ] # Vegetated surfaces
-    
+    vegetal_rgb: [[127,127,127], [0,255,0]] # grey, green
     # de https://github.com/IGNF/FLAIR-2/blob/b9b48922bf18c8e3dd93c2ce76120ec4ad40d741/notebook/data_display.py#L23
-    colors:
+    hex_colors:
         1   : '#db0e9a'
         2   : '#938e7b'
         3   : '#f80c00'
