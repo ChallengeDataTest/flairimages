@@ -89,15 +89,14 @@ DOI:https://doi.org/10.13140/RG.2.2.30183.73128/1
 | 9  | vignoble |![#660082](./img/sq_660082.png) |  | V 
 | 10  | végétation herbacée |![#55ff00](./img/sq_55ff00.png) |  | V 
 | 11  | terre agricole |![#fff30d](./img/sq_fff30d.png) |  | V 
-| 12  | terre labourée |![#e4df7c](./img/sq_e4df7c.png) |  | V 
+| 12  | terre labourée |![#e4df7c](./img/sq_e4df7c.png) |  |  
 | 13  | piscine |![#3de6eb](./img/sq_3de6eb.png) | A |  
 | 14  | neige |![#ffffff](./img/sq_ffffff.png) |  |  
-| 15  | coupe claire |![#8ab3a0](./img/sq_8ab3a0.png) |  | V 
+| 15  | coupe claire |![#8ab3a0](./img/sq_8ab3a0.png) |  |  
 | 16  | mixte |![#6b714f](./img/sq_6b714f.png) |  | V 
 | 17  | ligneux |![#c5dc42](./img/sq_c5dc42.png) |  | V 
 | 18  | serre |![#9999ff](./img/sq_9999ff.png) | A |  
-| 19  | autre |![#000000](./img/sq_000000.png) |  |   
-
+| 19  | autre |![#000000](./img/sq_000000.png) |  |  
 ### Exemples de masque
 ![Exemple de masque](./img/example.png)  
 
@@ -105,5 +104,6 @@ DOI:https://doi.org/10.13140/RG.2.2.30183.73128/1
 
 ![Exemple de masque](./img/example2.png)  
 
+![Exemple de masque](./img/example3.png)  
 
-
+![Exemple de masque](./img/example4.png)  
