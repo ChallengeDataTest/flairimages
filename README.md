@@ -107,3 +107,8 @@ DOI:https://doi.org/10.13140/RG.2.2.30183.73128/1
 ![Exemple de masque](./img/example3.png)  
 
 ![Exemple de masque](./img/example4.png)  
+
+# Exemples de regression pixel à pixel
+![Exemple de regression pixel à pixel](./img/regression_example1.png)
+
+![Exemple de regression pixel à pixel](./img/regression_example2.png)

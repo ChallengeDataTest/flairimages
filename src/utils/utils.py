@@ -252,6 +252,7 @@ def make_nomenclature_markdown(config:dict, output_file:Path=None):
 
 
 
+#TODO: refactor names and arguments to clarify the conversion functions
 
 def convert_to_class_rgb(arr_2d: np.ndarray, config:dict ) -> np.ndarray:
     return config['nomenclature']['class_to_rgb'][arr_2d]
@@ -268,6 +269,11 @@ def convert_to_artificial(arr_2d: np.ndarray, conf: dict) -> np.ndarray:
 
 def convert_to_vegetal(arr_2d: np.ndarray, conf: dict) -> np.ndarray:
     return conf['nomenclature']['class_to_vegetal'][arr_2d]
+
+def vegetal_to_rgb(arr: np.ndarray, conf: dict) -> np.ndarray:
+    return np.array(conf['nomenclature']['vegetal_rgb'], dtype=np.uint8)[arr]
+def artificial_to_rgb(arr: np.ndarray, conf: dict) -> np.ndarray:
+    return np.array(conf['nomenclature']['artificiel_rgb'], dtype=np.uint8)[arr]
 
 
 
