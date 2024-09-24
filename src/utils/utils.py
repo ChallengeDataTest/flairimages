@@ -9,6 +9,10 @@ from matplotlib.colors import hex2color
 from pathlib import Path
 from pprint import pprint
 import pandas as pd
+import skimage.transform as skt
+import unittest
+
+
 
 def read_config(file_path:Path, root_dir:Path, verbose=True) -> dict:
     with file_path.open() as f:
@@ -29,20 +33,15 @@ def read_config(file_path:Path, root_dir:Path, verbose=True) -> dict:
     
     # precalculate vegetal classes indicators
     class_to_vegetal = np.zeros(shape=len(class_to_hex)+1, dtype=np.uint8)
-    for c in conf['nomenclature']['vegetal']:
+    for c in conf['nomenclature']['vegetal_classes']:
         class_to_vegetal[c] = 1
     conf['nomenclature']['class_to_vegetal'] = class_to_vegetal
-    vegetal_rgbs = np.array(conf['nomenclature']['vegetal_rgb'], dtype=np.uint8)
-    
-    conf['nomenclature']['class_to_vegetal_rgb'] = vegetal_rgbs[class_to_vegetal]
     
     # precalculate artificiel classes indicators
-    class_to_artificiel = np.zeros(shape=len(class_to_hex)+1, dtype=np.uint8)
-    for c in conf['nomenclature']['artificiel']:
-        class_to_artificiel[c] = 1
-    conf['nomenclature']['class_to_artificiel'] = class_to_artificiel
-    artificiel_rgbs = np.array(conf['nomenclature']['artificiel_rgb'], dtype=np.uint8)
-    conf['nomenclature']['class_to_artificiel_rgb'] = artificiel_rgbs[class_to_artificiel]
+    class_to_artificial = np.zeros(shape=len(class_to_hex)+1, dtype=np.uint8)
+    for c in conf['nomenclature']['artificial_classes']:
+        class_to_artificial[c] = 1
+    conf['nomenclature']['class_to_artificial'] = class_to_artificial
     
     
     
@@ -252,30 +251,93 @@ def make_nomenclature_markdown(config:dict, output_file:Path=None):
 
 
 
-#TODO: refactor names and arguments to clarify the conversion functions
 
-def convert_to_class_rgb(arr_2d: np.ndarray, config:dict ) -> np.ndarray:
-    return config['nomenclature']['class_to_rgb'][arr_2d]
+def fast_down_sample(large_images: np.array, by: int, method='max') -> np.array:
+    """
+    fast downsampling of an array of images by a factor 
+    credits to Waylon Flinn
+    https://stackoverflow.com/a/56135413/1137334
+
+    convenient for masks (no interpolation)
+    """
+    # check by is an integer power of 2
+    if not int(by) == by and by & (by - 1) != 0:
+        raise ValueError("Downsampling factor must be an integer power of 2")
+
+    if len(large_images.shape) != 4:
+        raise ValueError("(n_image,W,H,n_channels) shape expected")
+    # large image array is shape (1,128, 128, 3)
+    # small image array is shape (1,64, 64, 3)
+    n, h, w, c = large_images.shape
+    if method == 'max':
+        small_images = large_images.reshape((n, h//by, by, w//by, by, c)).max(axis=(3, 5))
+    elif method == 'corner':
+        small_images = large_images[:, ::by, ::by, :]
+    elif method == 'mean':
+        small_images = large_images.reshape((n, h//by, by, w//by, by, c)).mean(axis=(3, 5))
+    elif method == 'nearest':
+        # The numpy.reshape function creates a view where possible or a copy otherwise. 
+        # see https://numpy.org/doc/stable/user/basics.copies.html
+        small_images = skt.resize(large_images.reshape((n*h, w, c)), 
+                                  order=0, output_shape=(n*h//by, w//by, c))
+        small_images.reshape((n, h//by, w//by, c), inplace=True)
+    return small_images
     
 
-def convert_to_artificiel_rgb(arr_2d: np.ndarray, conf: dict ) -> np.ndarray:
-    return conf['nomenclature']['class_to_artificiel_rgb'][arr_2d]
+def fast_up_sample(small_images: np.array, by: int) -> np.array:
+    """
+    fast upsampling of an array of images by a factor 
+    credits to Waylon Flinn
+    https://stackoverflow.com/a/56135413/1137334
+
+    convenient for masks (no interpolation)
+    """
+    # check by is an integer
+    if not int(by) == by and by >= 1:
+        raise ValueError("Upsampling factor must be positive integer")
+
+    if len(small_images.shape) != 4:
+        raise ValueError("(n_image,W,H,n_channels) shape expected")
+    n, h, w, c = small_images.shape
+    large_images = np.zeros((n, h*by, w*by, c), dtype=small_images.dtype)
+    large_images[:, ::by, ::by, :] = small_images
+    return large_images
+
+
+
     
-def convert_to_vegetal_rgb(arr_2d: np.ndarray, conf: dict ) -> np.ndarray:
-    return conf['nomenclature']['class_to_vegetal_rgb'][arr_2d]
 
-def convert_to_artificial(arr_2d: np.ndarray, conf: dict) -> np.ndarray:
-    return conf['nomenclature']['class_to_artificiel'][arr_2d]
+                                    
 
-def convert_to_vegetal(arr_2d: np.ndarray, conf: dict) -> np.ndarray:
-    return conf['nomenclature']['class_to_vegetal'][arr_2d]
+
+def class_to_rgb(arr: np.ndarray, config: dict) -> np.ndarray:
+    """
+    Convert a array indicating class to RGB array
+    according to the nomenclature in configuration
+    """
+    return config['nomenclature']['class_to_rgb'][arr]
+    
+
+def class_to_artificial(arr: np.ndarray, conf: dict) -> np.ndarray:
+    """
+    Convert a array indicating class to an boolean array indicating artificial
+    according to the nomenclature in configuration
+    """
+    return conf['nomenclature']['class_to_artificial'][arr]
+
+def class_to_vegetal(arr: np.ndarray, conf: dict) -> np.ndarray:
+    """
+    Convert a array indicating class to an boolean array indicating vegetal 
+    according to the nomenclature in configuration
+    """
+    return conf['nomenclature']['class_to_vegetal'][arr]
 
 def vegetal_to_rgb(arr: np.ndarray, conf: dict) -> np.ndarray:
-    return np.array(conf['nomenclature']['vegetal_rgb'], dtype=np.uint8)[arr]
+    return np.array(conf['nomenclature']['vegetal_to_rgb'], dtype=np.uint8)[arr]
+
 def artificial_to_rgb(arr: np.ndarray, conf: dict) -> np.ndarray:
-    return np.array(conf['nomenclature']['artificiel_rgb'], dtype=np.uint8)[arr]
+    return np.array(conf['nomenclature']['artificial_to_rgb'], dtype=np.uint8)[arr]
 
 
 
-    
-    
+

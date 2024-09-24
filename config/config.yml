@@ -11,7 +11,7 @@ paths:
     # will contain list of img and mask files with metadata
     files_csv: ['data', 'test','testdataset.csv']
     files_df: ['data', 'test','testdataset.pkl']
-
+    pixels_df: ['data', 'test','testpixels.pkl']
 image_extension: '.tif'
 
 image_shape: [512, 512, 5]
@@ -76,12 +76,12 @@ nomenclature:
             17 : 'ligneux'
             18 : 'serre'
             19 : 'autre'
-    artificiel: [1, 2, 3, 13, 18] # Anthropized surfaces without vegetation
-    artificiel_rgb: [[127,127,127], [255,0,0]] # grey, red
+    artificial_classes: [1, 2, 3, 13, 18] # Anthropized surfaces without vegetation
+    artificial_to_rgb: [[127,127,127], [255,0,0]] # grey, red
     # pour faciliter l'exercice on ne compte pas 12:'terre labourée' (i.e. sans végétation visible) dans le végétal
     # ni 15:'coupe claire' ("trees cut down and harvested")
-    vegetal: [6, 7, 8, 9, 10, 11, 16, 17, ] # Vegetated surfaces
-    vegetal_rgb: [[127,127,127], [0,255,0]] # grey, green
+    vegetal_classes: [6, 7, 8, 9, 10, 11, 16, 17, ] # Vegetated surfaces
+    vegetal_to_rgb: [[127,127,127], [0,255,0]] # grey, green
     # de https://github.com/IGNF/FLAIR-2/blob/b9b48922bf18c8e3dd93c2ce76120ec4ad40d741/notebook/data_display.py#L23
     hex_colors:
         1   : '#db0e9a'
