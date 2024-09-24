@@ -2,8 +2,10 @@
 # should be all relative to project's root
 # will be expanded to absolute paths by the code
 # (this to avoid windows/linux path issues)
+
+# here 'test' refers to the test part  of the FLAIR-1 dataset
+# most probably large enough for us
 paths:
-    src: ['src']
     config: ['config']
     outputs: ['outputs']
     dataset: ['data','test']
