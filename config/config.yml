@@ -6,6 +6,7 @@
 # here 'test' refers to the test part  of the FLAIR-1 dataset
 # most probably large enough for us
 paths:
+    # location of this file, probabiliy not needed
     config: ['config']
     outputs: ['outputs']
     dataset: ['data','test']

@@ -195,51 +195,16 @@ def make_image_collection(conf: dict,
     return images, file_names.index.values
 
 def read_image_collection(conf: dict) -> np.array:
-    return np.load(conf['paths']['image_collection'])
+    return np.load(conf['paths']['image_collection']), np.load(conf['paths']['image_collection_index'])
 
-def make_color_squares(config:dict, output_dir:Path=None, do_plot:bool=True):
-    """
-    Make a PNG file made of one square per color of the mask convention.
-    Name each square with the class color
-    """
-    
-    colors_names = config['nomenclature']['hex_colors']
-    class_to_rgb = config['nomenclature']['class_to_rgb']
-
-    labels = config['nomenclature']['classes']['french']
-    # for each color in the mask convention
-    # make a square of the color
-    for k, hex in colors_names.items():
-        square = np.zeros((10,10,3), dtype=np.uint8)+class_to_rgb[k]
-        # save numpy square as png directly
-        
-        if output_dir is not None:
-            f_out = output_dir/f"sq_{hex[1:]}.png" 
-            plt.imsave(f_out, square)
-            print(f"Color square {hex} written to {f_out}")
-        if do_plot:
-            # make the 2x2 cm
-            # plot the square
-            cm = 1/2.54  # centimeters in inches 
-            plt.figure(figsize=(2*cm, 2*cm))
-            plt.imshow(square)
-            plt.title(f"{k} - {labels[k]}_ {hex}")
-            plt.show()
-  
-
-
-
-    
-    
-
-def make_nomenclature_html(config:dict, output_file:Path=None):
+def make_nomenclature_html(conf:dict, output_file:Path=None):
     """
     Make an HTML file of the mask convention
     """
-    colors = config['nomenclature']['hex_colors']
-    labels = config['nomenclature']['classes']['french']   
-    artificiel_classes = config['nomenclature']['artificiel']
-    vegetal_classes = config['nomenclature']['vegetal']
+    colors = conf['nomenclature']['hex_colors']
+    labels = conf['nomenclature']['classes']['french']   
+    artificial_classes = conf['nomenclature']['artificial_classes']
+    vegetal_classes = conf['nomenclature']['vegetal_classes']
     
     
     out = """
@@ -271,12 +236,12 @@ def make_nomenclature_html(config:dict, output_file:Path=None):
 
     for id, label in labels.items():
         color = colors[id]
-        artificiel = 'X' if id in artificiel_classes else ""
+        artificial = 'X' if id in artificial_classes else ""
         vegetal = 'X' if id in vegetal_classes else ""
         out+=f"<tr>"
         out+=f"<td>{id}</td><td>{label}</td>"
         out+=f"<td><span style=\"color:{color}; font-size: 20px;\">■</span> {color}</td>"
-        out+=f"<td>{artificiel}</td>"
+        out+=f"<td>{artificial}</td>"
         out+=f"<td>{vegetal}</td>"
         out+="</tr>\n"
     
@@ -290,14 +255,14 @@ def make_nomenclature_html(config:dict, output_file:Path=None):
     return out
 
 
-def make_nomenclature_markdown(config:dict, output_file:Path=None):
+def make_nomenclature_markdown(conf: dict, output_file: Path = None):
     """
     Make a markdown file of the mask convention
     """
-    hexs = config['nomenclature']['hex_colors']
-    labels = config['nomenclature']['classes']['french']   
-    artificiel_classes = config['nomenclature']['artificiel']
-    vegetal_classes = config['nomenclature']['vegetal']
+    hexs = conf['nomenclature']['hex_colors']
+    labels = conf['nomenclature']['classes']['french']
+    artificiel_classes = conf['nomenclature']['artificial_classes']
+    vegetal_classes = conf['nomenclature']['vegetal_classes']
     out = []
     out.append("| Classe | Label | Color | Artificiel | Végétal |  ")
     out.append("|---|-------|-------|---|---| ")
@@ -305,12 +270,12 @@ def make_nomenclature_markdown(config:dict, output_file:Path=None):
         hex = hexs[id]
         artificiel = 'A' if id in artificiel_classes else ""
         vegetal = 'V' if id in vegetal_classes else ""
-        
-        out.append(f"| {id}  | {label} |"+
+
+        out.append(f"| {id}  | {label} |" +
                    # insert an image from the files prepared by make_color_squares(...)
                    # a notebook is most probably in a level 1 subdirectory of root
-                   f"![{hex}](../img/sq_{hex[1:]}.png) |"+
-                   f" {artificiel} |"+
+                   f"![{hex}](../img/sq_{hex[1:]}.png) |" +
+                   f" {artificiel} |" +
                    f" {vegetal} ")
     out = "\n".join(out)
     if output_file is not None:
@@ -321,7 +286,58 @@ def make_nomenclature_markdown(config:dict, output_file:Path=None):
         print(f"Mask convention written to {output_file}")
     return out
 
+def make_nomenclature_image(conf:dict, figsize=None):
+    """
+    Create an image of the mask convention table and save it as a PNG file.
+    """
+    hexs = conf['nomenclature']['hex_colors']
+    labels = conf['nomenclature']['classes']['french']
+    artificial_classes = conf['nomenclature']['artificial_classes']
+    class_colors = conf['nomenclature']['class_to_rgb']
+    vegetal_classes = conf['nomenclature']['vegetal_classes']
+    vegetal_colors = conf['nomenclature']['vegetal_to_rgb']
+    artificial_colors = conf['nomenclature']['artificial_to_rgb']
 
+    # Create a table with the class information
+    table_text = []
+    table_colors = []
+    for id, label in labels.items():
+        table_text.append([f"{id:02d}: {label}",
+                           f"{hexs[id]}",
+                           "oui" if id in vegetal_classes else "non" ,
+                           "oui" if id in artificial_classes else "non"])
+        table_colors.append([[1.0,1.0,1.0],
+                             np.array(class_colors[id])/255,
+                             np.array( vegetal_colors[id in vegetal_classes])/255,
+                             np.array(artificial_colors[id in artificial_classes])/255])
+    
+    # Create a figure and axis
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.axis('tight')
+    ax.axis('off')
+
+    # Create the table
+    table = ax.table(cellText=table_text,
+                     cellColours=table_colors,
+                     colLabels=["Classe", "Couleur","Vegetal", "Artificiel"],
+                     cellLoc='center',
+                     loc='center',
+                     colWidths=[4,1,1,1])
+
+    # change the color of the black cell of the last class
+    table[(len(table_text),1)].set_text_props(color='white')
+    # change the alignement of the first column
+    for i in range(len(table_text)):
+        cell = table[(i+1,0)]
+        cell._loc = 'left'
+        cell._text.set_horizontalalignment('left')
+    # Set the color for the "Color" column
+    #for i, row in enumerate(table_data):
+    #    color = row[2]
+    #    table[(i + 1, 2)].set_facecolor(color)
+
+    # Save the table as a PNG file
+    return fig, ax   
 
 
 def fast_down_sample(large_images: np.array, by: int, method='max') -> np.array:
@@ -392,12 +408,12 @@ def fast_up_sample(small_images: np.array, by: int) -> np.array:
                                     
 
 
-def class_to_rgb(arr: np.ndarray, config: dict) -> np.ndarray:
+def class_to_rgb(arr: np.ndarray, conf: dict) -> np.ndarray:
     """
     Convert a array indicating class to RGB array
     according to the nomenclature in configuration
     """
-    return config['nomenclature']['class_to_rgb'][arr]
+    return conf['nomenclature']['class_to_rgb'][arr]
     
 
 def class_to_artificial(arr: np.ndarray, conf: dict) -> np.ndarray:
