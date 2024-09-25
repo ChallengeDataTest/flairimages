@@ -119,7 +119,14 @@ def make_samples_df(conf: dict, to_disk:bool=False) -> pd.DataFrame:
         
     return df
 
-def make_image_collection(conf: dict, max=None, verbose=True, downsample=None, sample=True, to_disk=True)-> np.array:
+def make_image_collection(conf: dict,
+                           max=None, 
+                           verbose=True,
+                           downsample=None,
+                           down_sample_mask_method='nearest',
+                           down_sample_image_method='mean', 
+                           sample=True, 
+                           to_disk=True)-> np.array:
     file_names = read_samples_df(conf)[['image','mask']]
     file_names.reset_index(drop=True, inplace=True)
     
@@ -134,25 +141,28 @@ def make_image_collection(conf: dict, max=None, verbose=True, downsample=None, s
     n_to_read = min(max, len(file_names))
     
     if sample:
-        file_names = file_names.sample(n_to_read)
+        file_names = file_names.sample(n_to_read, replace=False)
     else:
         file_names = file_names.head(n_to_read) 
     
     # check the image dimensions are a multiple of downsample
     assert(conf['image_shape'][0]%downsample == 0)
     assert(conf['image_shape'][1]%downsample == 0)
-    # put the masks in the last channel
+    # put the masks for class, artificial, vegetal in the last 3 channel
     record_shape = (n_to_read,
                     conf['image_shape'][0]//downsample,
                     conf['image_shape'][1]//downsample,
-                    conf['image_shape'][2]+1)
+                    conf['image_shape'][2]+3)
+    mask_channel = conf['image_shape'][2]
     # make an array of images                
     images = np.zeros(shape=record_shape, dtype=np.uint8)
     if verbose:
         print(f"Reading {n_to_read} images")
         print(f"Images will be downsampled by {downsample}")
         print(f"Collection will be stored in shape {record_shape}")
+        print(f"the last 3 channels will be the class, artificial and vegetal masks")
         print(f"expected memory usage: {images.nbytes//1e6:,.0f} megabytes")
+        
     
     for i,(image_index,image_file, mask_file) in enumerate(file_names.itertuples(index=True)):
         # check we didn't mess up the index
@@ -160,14 +170,21 @@ def make_image_collection(conf: dict, max=None, verbose=True, downsample=None, s
         mask = skio.imread(mask_file)
         # downsample
         # (needs an array of images with channel dimension)
-        image = fast_down_sample(np.expand_dims(image, axis=0), by = downsample, method ='mean').squeeze(axis=0)
-        mask = fast_down_sample(np.expand_dims(mask, axis=(0,-1)), by = downsample, method='corner').squeeze(axis=(0,-1))
-        images[i, :, :, :-1] = image
-        images[i, :, :, -1] = mask
+        image = fast_down_sample(np.expand_dims(image, axis=0), by = downsample, method =down_sample_image_method).squeeze(axis=0)
+        mask = fast_down_sample(np.expand_dims(mask, axis=(0,-1)), by = downsample, method=down_sample_mask_method).squeeze(axis=(0,-1))
+        images[i, :, :, 0:mask_channel] = image
+        images[i, :, :, mask_channel] = mask
         # print progress
         if verbose:
             if i % 1000 == 0:
                 print(f"Reading image {i} of {n_to_read}")
+    
+    # calculate the artificial and vegetal masks in one pass
+
+    images[:,:,:,mask_channel+1] = class_to_artificial(arr=images[:,:,:,mask_channel], conf=conf)
+    images[:,:,:,mask_channel+2] = class_to_vegetal(arr=images[:,:,:,mask_channel], conf=conf)
+    
+    
     if to_disk:
         np.save(conf['paths']['image_collection'], images)
         np.save(conf['paths']['image_collection_index'], file_names.index.values)
@@ -315,8 +332,8 @@ def fast_down_sample(large_images: np.array, by: int, method='max') -> np.array:
 
     convenient for masks (no interpolation)
     """
-    # check by is an integer power of 2
-    if int(by) != by or by & (by - 1) != 0 or by < 1:
+    # check by is a positive  integer 
+    if int(by) != by  or by < 1:
         raise ValueError("Downsampling factor must be an integer power of 2")
 
     if len(large_images.shape) != 4:
@@ -324,6 +341,10 @@ def fast_down_sample(large_images: np.array, by: int, method='max') -> np.array:
     # large image array is shape (1,128, 128, 3)
     # small image array is shape (1,64, 64, 3)
     n, h, w, c = large_images.shape
+    
+    if  h%by != 0 or w%by != 0:
+        raise ValueError("Image dimensions must be a multiple of the downsampling factor")
+
     if method == 'max':
         small_images = large_images.reshape((n, h//by, by, w//by, by, c)).max(axis=(2, 4))
     elif method == 'corner':
@@ -340,6 +361,8 @@ def fast_down_sample(large_images: np.array, by: int, method='max') -> np.array:
                                   order=0,
                                   output_shape=(n*h//by, w//by, c))
         small_images=small_images.reshape((n, h//by, w//by, c))
+    else:
+        raise ValueError("method must be 'max', 'corner', 'mean' or 'nearest'")
     return small_images
     
 

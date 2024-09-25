@@ -32,6 +32,11 @@ class TestFastSample(unittest.TestCase):
         with self.assertRaises(ValueError):
             fast_down_sample(np.random.randint(0, 256, (128, 128, 3), dtype=np.uint8), by=self.by, method='max')
     
+    def test_down_sample_invalid_method(self):
+        with self.assertRaises(ValueError):
+            fast_down_sample(self.large_images, by=3, method='max++')
+    
+
     def test_up_sample(self):
         large_images = fast_up_sample(self.small_images, by=self.by)
         self.assertEqual(large_images.shape, self.large_shape)
