@@ -1,0 +1,14 @@
+{
+    "python.testing.cwd": "",
+    "python.envFile": "",
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "/workspaces/flairimages/src",
+        "-p",
+        "test_*.py"
+    ],
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": true,
+    "pyright.exclude":["data"]
+}
