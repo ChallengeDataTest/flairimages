@@ -10,13 +10,25 @@ paths:
     outputs: ['outputs']
     dataset: ['data','test']
     metadata: ['data', 'flair-1_metadata_aerial.json']
-    # will contain list of img and mask files with metadata
+    # will contain list of img and mask files path with metadata
+    # not the image data itself
     files_csv: ['data', 'test','testdataset.csv']
     files_df: ['data', 'test','testdataset.pkl']
-    pixels_df: ['data', 'test','testpixels.pkl']
+    image_collection: ['data', 'test','testimagecollection.npy']
+    # index of each image in the image collection into the files_df dataframe
+    image_collection_index: ['data', 'test','testimagecollectionindex.npy']
+    
 image_extension: '.tif'
 
 image_shape: [512, 512, 5]
+
+# number of images to collect in the image collection
+# only a suggestion
+collection_size: 10000
+# dimension  downsample factor for the image collection
+collection_downsample: 8
+
+
 
         
     

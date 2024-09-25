@@ -10,6 +10,7 @@ from pathlib import Path
 from pprint import pprint
 import pandas as pd
 import skimage.transform as skt
+import skimage.io as skio
 import unittest
 
 
@@ -77,26 +78,19 @@ def make_samples_df(conf: dict, to_disk:bool=False) -> pd.DataFrame:
     Make a sample dataframe of (images, lables) couples 
     """
     dataset_dir = Path(conf['paths']['dataset'])
-    
-    
-    
     df_meta = get_metadata_to_df(conf)
-    
-    
     # e.g. '.tif'
     ext = conf['image_extension']
-    
     df = pd.DataFrame({'name': pd.Series(dtype='str'),
                    'image': pd.Series(dtype='str'),
                    'mask': pd.Series(dtype='str')})
     df.set_index('name', inplace=True)
-    
-    
+    #
     for  file  in dataset_dir.glob("**/*"+ext):
         stem = file.stem
         if '_' not in stem:
             continue
-        
+        #
         # image files are IMG_XXXX.tif, in various folders
         # mask files are MSK_XXXX.tif
         im_or_mask, num_str = file.stem.split("_")
@@ -124,6 +118,67 @@ def make_samples_df(conf: dict, to_disk:bool=False) -> pd.DataFrame:
         print(f"dataframe written to {df_file}")
         
     return df
+
+def make_image_collection(conf: dict, max=None, verbose=True, downsample=None, sample=True, to_disk=True)-> np.array:
+    file_names = read_samples_df(conf)[['image','mask']]
+    file_names.reset_index(drop=True, inplace=True)
+    
+    if downsample is None:
+        downsample = conf['collection_downsample']
+    assert(downsample > 0)
+    # 
+    if max is None:
+        max = conf['collection_size']
+    assert(max > 0)
+    
+    n_to_read = min(max, len(file_names))
+    
+    if sample:
+        file_names = file_names.sample(n_to_read)
+    else:
+        file_names = file_names.head(n_to_read) 
+    
+    # check the image dimensions are a multiple of downsample
+    assert(conf['image_shape'][0]%downsample == 0)
+    assert(conf['image_shape'][1]%downsample == 0)
+    # put the masks in the last channel
+    record_shape = (n_to_read,
+                    conf['image_shape'][0]//downsample,
+                    conf['image_shape'][1]//downsample,
+                    conf['image_shape'][2]+1)
+    # make an array of images                
+    images = np.zeros(shape=record_shape, dtype=np.uint8)
+    if verbose:
+        print(f"Reading {n_to_read} images")
+        print(f"Images will be downsampled by {downsample}")
+        print(f"Collection will be stored in shape {record_shape}")
+        print(f"expected memory usage: {images.nbytes//1e6:,.0f} megabytes")
+    
+    for i,(image_index,image_file, mask_file) in enumerate(file_names.itertuples(index=True)):
+        # check we didn't mess up the index
+        image = skio.imread(image_file)
+        mask = skio.imread(mask_file)
+        # downsample
+        # (needs an array of images with channel dimension)
+        image = fast_down_sample(np.expand_dims(image, axis=0), by = downsample, method ='mean').squeeze(axis=0)
+        mask = fast_down_sample(np.expand_dims(mask, axis=(0,-1)), by = downsample, method='corner').squeeze(axis=(0,-1))
+        images[i, :, :, :-1] = image
+        images[i, :, :, -1] = mask
+        # print progress
+        if verbose:
+            if i % 1000 == 0:
+                print(f"Reading image {i} of {n_to_read}")
+    if to_disk:
+        np.save(conf['paths']['image_collection'], images)
+        np.save(conf['paths']['image_collection_index'], file_names.index.values)
+        if verbose:
+            print(f"Image collection written to {conf['paths']['image_collection']}")
+            print(f"Image collection indexes written to {conf['paths']['image_collection_index']}")
+            
+    return images, file_names.index.values
+
+def read_image_collection(conf: dict) -> np.array:
+    return np.load(conf['paths']['image_collection'])
 
 def make_color_squares(config:dict, output_dir:Path=None, do_plot:bool=True):
     """
@@ -261,7 +316,7 @@ def fast_down_sample(large_images: np.array, by: int, method='max') -> np.array:
     convenient for masks (no interpolation)
     """
     # check by is an integer power of 2
-    if not int(by) == by and by & (by - 1) != 0:
+    if int(by) != by or by & (by - 1) != 0 or by < 1:
         raise ValueError("Downsampling factor must be an integer power of 2")
 
     if len(large_images.shape) != 4:
@@ -270,17 +325,21 @@ def fast_down_sample(large_images: np.array, by: int, method='max') -> np.array:
     # small image array is shape (1,64, 64, 3)
     n, h, w, c = large_images.shape
     if method == 'max':
-        small_images = large_images.reshape((n, h//by, by, w//by, by, c)).max(axis=(3, 5))
+        small_images = large_images.reshape((n, h//by, by, w//by, by, c)).max(axis=(2, 4))
     elif method == 'corner':
         small_images = large_images[:, ::by, ::by, :]
     elif method == 'mean':
-        small_images = large_images.reshape((n, h//by, by, w//by, by, c)).mean(axis=(3, 5))
+        # warning:  .mean(axis=(2, 4), dtype=large_images.dtype) fails the tests. 
+        # Why ?
+        # using instead: .mean(axis=(2, 4)).astype(large_images.dtype)
+        small_images = large_images.reshape((n, h//by, by, w//by, by, c)).mean(axis=(2, 4)).astype(large_images.dtype)
     elif method == 'nearest':
         # The numpy.reshape function creates a view where possible or a copy otherwise. 
         # see https://numpy.org/doc/stable/user/basics.copies.html
         small_images = skt.resize(large_images.reshape((n*h, w, c)), 
-                                  order=0, output_shape=(n*h//by, w//by, c))
-        small_images.reshape((n, h//by, w//by, c), inplace=True)
+                                  order=0,
+                                  output_shape=(n*h//by, w//by, c))
+        small_images=small_images.reshape((n, h//by, w//by, c))
     return small_images
     
 
@@ -293,15 +352,15 @@ def fast_up_sample(small_images: np.array, by: int) -> np.array:
     convenient for masks (no interpolation)
     """
     # check by is an integer
-    if not int(by) == by and by >= 1:
+    if  int(by) != by or by < 1:
         raise ValueError("Upsampling factor must be positive integer")
 
     if len(small_images.shape) != 4:
         raise ValueError("(n_image,W,H,n_channels) shape expected")
-    n, h, w, c = small_images.shape
-    large_images = np.zeros((n, h*by, w*by, c), dtype=small_images.dtype)
-    large_images[:, ::by, ::by, :] = small_images
-    return large_images
+    # n, h, w, c = small_images.shape
+    # large_images = np.zeros((n, h, by, w, by, c), dtype=small_images.dtype)
+    # large_images[:, ::by, ::by, :] = small_images
+    return np.repeat(np.repeat(small_images, by, axis=1), by, axis=2)
 
 
 

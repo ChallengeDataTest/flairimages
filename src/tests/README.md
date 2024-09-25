@@ -2,7 +2,7 @@
 
 - to avoid import errors, the tests are run from the ./src directorty
 ```bash
-cd src
+cd /workspaces/flairimages/src
 python -m unittest discover -s tests -p 'test_*.py'
 # or
 python -m unittest  
