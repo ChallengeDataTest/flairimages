@@ -30,6 +30,7 @@ voir ce [fichier](./img/README_SETUP.MD)
 
 ## Description des données
 - images: fichiers IMG_[id].tif à 5 canaux (RGB + infrarouge + élévation)
+- chaque image représente un carré de 10,485.76 m2 au sol soit environ 102 m de coté. Un pixel représente un carré de 20 cm de coté
 - masques: fichiers MSK_[id].tif à 1 canal (label)
 - les classes  sont décrites avec leurs regroupements dans le fichier `./config/config.yaml`
 - les labels 'Artificiel' et 'Végétal' sont propres à ce projet et ne sont pas dans les données originales, ils sont définis dans le fichier `./config/config.yaml`.
@@ -54,6 +55,7 @@ Ils sont basés sur les labels originaux de Flair#1 et leur description détaill
 ### Downsampling
 
 - Pour ce projet les images et masques sont downsamplés par un facteur 8x8 (défini dans le [fichier de configuration](./config/config.yml)) pour réduire la taille des données
+- Un pixel représente alors un carré de 1.6 m de coté
 - avant:  
 ![Exemple de dowsampling avant](./img/down_sampled_no.png)
 - après:  
@@ -149,8 +151,9 @@ Ils sont basés sur les labels originaux de Flair#1 et leur description détaill
   - régression R+G+B  
 
 peut interesser les élèves, avec un feed-back visuel immédiat.
-L'approche pixel par pixel permet d'introduire des notions mathématiques de base: seuil de séparation, droite de séparation, etc. sans se préoccuper de géométrie des images.
 
+- L'approche pixel par pixel permet d'introduire des notions mathématiques de base: seuil de séparation, droite de séparation, etc. sans se préoccuper de géométrie des images.  
+- Le sens concret est qu'un pixels représente un carré au sol de 1.6 m de coté, regardé flouté.
 
 - L'artificialisation des sols est un sujet d'actualité.
 
