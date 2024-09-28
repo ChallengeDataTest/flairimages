@@ -14,13 +14,6 @@ FLAIR #1: semantic segmentation and domain adaptation dataset. (2022).
 DOI:https://doi.org/10.13140/RG.2.2.30183.73128/1
 ```
 
-## Obtenir les données
-
-- télécharger les données voulues sur le [site de l'IGNF](https://ignf.github.io/FLAIR/)
-- il faut au minimum le dataset toy et les metadonnées `aerial`
-- décompresser les fichiers zip images et labels voulus (e.g. dans le répertoire `[racine du projet]/data/toy` ou `[racine du projet]/data/full`)
-- placer de même pour les métadonnées `aerial`
-- renseigner l'emplacement des données dans le fichier `[racine du projet]/config/config.yml`
 
 
 
@@ -31,53 +24,24 @@ DOI:https://doi.org/10.13140/RG.2.2.30183.73128/1
   proposer une tâche d'inférence simplifiée sur les données Flair#1.  
   Par exemple distinguer les sols artificialisés des sols naturels.
 
-## This project
+## Obtenir les données, setup
 
-### Configuration
-- Toutes les metadonnées doivent autant que possible être stockées dans le fichier `[racine du projet]/config/config.yaml`.
-
-### Working in containers
-
-- vscode :
-  - `code .` dans le répertoire racine sur la machine hôte
-  - `F1` puis `Dev Containers: Reopen in Container`
-  - retour en local (utile pour Git): `F1` puis `Dev Containers: Reopen folder locally`
-
-- Docker + Jupyter lab (superficiellemnt testé):
-  - dans le répertoire racine, sous bash:
-
-  ```bash
-  docker build -t flairimages ./Docker
-  
-  docker run -i -t --rm \  
-    -p 8888:8888 \  
-    -v $(pwd):/workspaces/flairimages \ 
-    flairimages
-  ```
-  
-  - relever l'ip avec tocken d'accès dans la sortie texte du container, ctrl+Click sur le lien pour ouvrir Jupyter lab dans le navigateur. E.g.:
-
-  ```text
-  [C 2024-09-12 18:32:40.454 ServerApp]  
-  
-    To access the server, open this file in a browser:  
-        file:///root/.local/share/jupyter/runtime/jpserver-1-open.html
-    Or copy and paste one of these URLs:  
-        http://localhost:8888/lab?token=dfba5c534dc12f4f0440a3afd221b908fb52025d87a96b99  
-        http://127.0.0.1:8888/lab?token=dfba5c534dc12f4f0440a3afd221b908fb52025d87a96b99  
-  [...]
-  ```
+voir ce [fichier](./img/README_SETUP.MD)
 
 ## Description des données
 - images: fichiers IMG_[id].tif à 5 canaux (RGB + infrarouge + élévation)
 - masques: fichiers MSK_[id].tif à 1 canal (label)
 - les classes  sont décrites avec leurs regroupements dans le fichier `./config/config.yaml`
+- les labels 'Artificiel' et 'Végétal' sont propres à ce projet et ne sont pas dans les données originales, ils sont définis dans le fichier `./config/config.yaml`.
+Ils sont basés sur les labels originaux de Flair#1 et leur description détaillée dans l'article de référence.
 
 ### Classes
 (voir [src.utils.utils.make_nomenclature_image()](./src/utils/utils.py) pour régénerer ce tableau)
 ![Classes](./img/nomenclature.png)
 
-### Exemples de masque
+
+### Exemples de masques de labels
+
 ![Exemple de masque](./img/example.png)  
 
 ![Exemple de masque](./img/example1.png)  
@@ -86,9 +50,112 @@ DOI:https://doi.org/10.13140/RG.2.2.30183.73128/1
 
 ![Exemple de masque](./img/example3.png)  
 
-![Exemple de masque](./img/example4.png)  
 
-# Exemples de regression pixel à pixel
-![Exemple de regression pixel à pixel](./img/regression_example_1.png)
+### Downsampling
+
+- Pour ce projet les images et masques sont downsamplés par un facteur 8x8 (défini dans le [fichier de configuration](./config/config.yml)) pour réduire la taille des données
+- avant:  
+![Exemple de dowsampling avant](./img/down_sampled_no.png)
+- après:  
+![Exemple de dowsampling après](./img/down_sampled_yes.png)
+
+### Distribution intensité de couleurs / classes
+
+![Distribution intensité de couleurs / classes](./img/pairplot.png)
+
+## Régressions pixel à pixel
+
+### Score de différents modèles de régression pixel à pixel
+- entrainement et score sur des prises de vue entre 12h et 13h  
+
+| Modèle |  f score |  
+| --- | --- |  
+| Artificial~R				 | 0.66043 |  
+| Artificial~G				 | 0.67052 |  
+| Artificial~B				 | 0.7611 |  
+| Artificial~NIR				 | 0.65719 |  
+| Artificial~Elevation				 | 0.65932 |  
+| Artificial~R+G				 | 0.66653 |  
+| Artificial~R+B				 | 0.85157 |  
+| Artificial~R+NIR				 | 0.74364 |  
+| Artificial~R+Elevation				 | 0.67966 |  
+| Artificial~G+B				 | 0.88601 |  
+| Artificial~G+NIR				 | 0.76791 |  
+| Artificial~G+Elevation				 | 0.70419 |  
+| Artificial~B+NIR				 | 0.81157 |  
+| Artificial~B+Elevation				 | 0.7849 |  
+| Artificial~NIR+Elevation				 | 0.67137 |  
+| Artificial~R+G+B				 | 0.88316 |  
+| Artificial~R+G+NIR				 | 0.76143 |  
+| Artificial~R+G+Elevation				 | 0.69139 |  
+| Artificial~R+B+NIR				 | 0.84487 |  
+| Artificial~R+B+Elevation				 | 0.85527 |  
+| Artificial~R+NIR+Elevation				 | 0.7571 |  
+| Artificial~G+B+NIR				 | 0.88874 |  
+| Artificial~G+B+Elevation				 | 0.88875 |  
+| Artificial~G+NIR+Elevation				 | 0.78405 |  
+| Artificial~B+NIR+Elevation				 | 0.82468 |  
+| Artificial~R+G+B+NIR				 | 0.88021 |  
+| Artificial~R+G+B+Elevation				 | 0.88416 |  
+| Artificial~R+G+NIR+Elevation				 | 0.77801 |  
+| Artificial~R+B+NIR+Elevation				 | 0.8606 |  
+| Artificial~G+B+NIR+Elevation				 | 0.89189 |  
+| Artificial~R+G+B+NIR+Elevation				 | 0.88246 |  
+| Vegetal~R				 | 0.69074 |  
+| Vegetal~G				 | 0.66929 |  
+| Vegetal~B				 | 0.7422 |  
+| Vegetal~NIR				 | 0.67686 |  
+| Vegetal~Elevation				 | 0.53048 |  
+| Vegetal~R+G				 | 0.68509 |  
+| Vegetal~R+B				 | 0.76346 |  
+| Vegetal~R+NIR				 | 0.80767 |  
+| Vegetal~R+Elevation				 | 0.71093 |  
+| Vegetal~G+B				 | 0.79811 |  
+| Vegetal~G+NIR				 | 0.80365 |  
+| Vegetal~G+Elevation				 | 0.70317 |  
+| Vegetal~B+NIR				 | 0.83194 |  
+| Vegetal~B+Elevation				 | 0.76727 |  
+| Vegetal~NIR+Elevation				 | 0.67495 |  
+| Vegetal~R+G+B				 | 0.80142 |  
+| Vegetal~R+G+NIR				 | 0.80406 |  
+| Vegetal~R+G+Elevation				 | 0.69789 |  
+| Vegetal~R+B+NIR				 | 0.83027 |  
+| Vegetal~R+B+Elevation				 | 0.78188 |  
+| Vegetal~R+NIR+Elevation				 | 0.8193 |  
+| Vegetal~G+B+NIR				 | 0.83918 |  
+| Vegetal~G+B+Elevation				 | 0.80277 |  
+| Vegetal~G+NIR+Elevation				 | 0.82002 |  
+| Vegetal~B+NIR+Elevation				 | 0.83841 |  
+| Vegetal~R+G+B+NIR				 | 0.84447 |  
+| Vegetal~R+G+B+Elevation				 | 0.80846 |  
+| Vegetal~R+G+NIR+Elevation				 | 0.8173 |  
+| Vegetal~R+B+NIR+Elevation				 | 0.83689 |  
+| Vegetal~G+B+NIR+Elevation				 | 0.84286 |  
+| Vegetal~R+G+B+NIR+Elevation				 | 0.84681 |  
+
+### Exemples de regression pixel à pixel
+
+![Exemple de regression pixel à pixel](./img/regression_example.png)  
+
+![Exemple de regression pixel à pixel](./img/regression_example2.png)  
+
+- La régression a visiblement des difficulté à classer les étendues aquatiques en non-végétal.
+
+## Conclusion
+- La classe 'Artificiel' est plus facile à prédire que la classe 'Végétal'
+- Amenée dans le bon langage, l'enchainement 
+  - régression à une variable à choisir parmi RGB (la bonne est le canal bleu)
+  - régression à deux variables à choisir parmi RGB (R+B ou G+B sont bons)
+  - régression R+G+B  
+
+peut interesser les élèves, avec un feed-back visuel immédiat.
+L'approche pixel par pixel permet d'introduire des notions mathématiques de base: seuil de séparation, droite de séparation, etc. sans se préoccuper de géométrie des images.
+
+
+- L'artificialisation des sols est un sujet d'actualité.
+
+  
+
+
 
 

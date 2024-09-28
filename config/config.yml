@@ -23,9 +23,6 @@ image_extension: '.tif'
 
 image_shape: [512, 512, 5]
 
-# number of images to collect in the image collection
-# only a suggestion
-collection_size: 10000
 # dimension  downsample factor for the image collection
 collection_downsample: 8
 

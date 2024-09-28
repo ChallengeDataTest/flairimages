@@ -60,9 +60,20 @@ def get_metadata_to_df(conf:dict) -> pd.DataFrame:
         data = json.load(f)
     
     # Convert JSON data to DataFrame
-    df = pd.DataFrame.from_dict(data, orient='index').convert_dtypes()
-    df.index.name = 'name'
-    return df
+    meta_df = pd.DataFrame.from_dict(data, orient='index').convert_dtypes()
+    meta_df.index.name = 'name'
+    # convert the date and time columns to year, month, day, hour, minute
+    meta_df['date'] = pd.to_datetime(meta_df['date'])
+    meta_df['year'] = meta_df['date'].dt.year
+    meta_df['month'] = meta_df['date'].dt.month
+    meta_df['day'] = meta_df['date'].dt.day
+    meta_df.drop(columns=['date'], inplace=True)
+    meta_df['hour'] = meta_df['time'].apply(lambda s:  int(s.split('h')[0]))
+    meta_df['minute'] = meta_df['time'].apply(lambda s:  int(s.split('h')[1]))
+    meta_df.drop(columns=['time'], inplace=True)
+    # convert the camera column to a category
+    meta_df['camera'] = meta_df['camera'].astype('category')
+    return meta_df
 
     
 def read_samples_df(conf: dict) -> pd.DataFrame:
@@ -135,7 +146,7 @@ def make_image_collection(conf: dict,
     assert(downsample > 0)
     # 
     if max is None:
-        max = conf['collection_size']
+        max = file_names.shape[0]
     assert(max > 0)
     
     n_to_read = min(max, len(file_names))
@@ -158,7 +169,7 @@ def make_image_collection(conf: dict,
     images = np.zeros(shape=record_shape, dtype=np.uint8)
     if verbose:
         print(f"Reading {n_to_read} images")
-        print(f"Images will be downsampled by {downsample}")
+        print(f"Images will be downsampled by {downsample}x{downsample}")
         print(f"Collection will be stored in shape {record_shape}")
         print(f"the last 3 channels will be the class, artificial and vegetal masks")
         print(f"expected memory usage: {images.nbytes//1e6:,.0f} megabytes")
@@ -430,11 +441,17 @@ def class_to_vegetal(arr: np.ndarray, conf: dict) -> np.ndarray:
     """
     return conf['nomenclature']['class_to_vegetal'][arr]
 
-def vegetal_to_rgb(arr: np.ndarray, conf: dict) -> np.ndarray:
-    return np.array(conf['nomenclature']['vegetal_to_rgb'], dtype=np.uint8)[arr]
+def vegetal_to_rgb(arr: np.ndarray, conf: dict, alpha=None) -> np.ndarray:
+    res = np.array(conf['nomenclature']['vegetal_to_rgb'], dtype=np.uint8)[arr]
+    if alpha is not None:
+        res = np.concatenate([res, int(alpha*255)*arr[:,:,np.newaxis]], axis=-1)
+    return res
 
-def artificial_to_rgb(arr: np.ndarray, conf: dict) -> np.ndarray:
-    return np.array(conf['nomenclature']['artificial_to_rgb'], dtype=np.uint8)[arr]
+def artificial_to_rgb(arr: np.ndarray, conf: dict, alpha=None) -> np.ndarray:
+    res = np.array(conf['nomenclature']['artificial_to_rgb'], dtype=np.uint8)[arr]
+    if alpha is not None:
+        res = np.concatenate([res, int(alpha*255)*arr[:,:,np.newaxis]], axis=-1)
+    return res
 
 
 
