@@ -147,10 +147,6 @@ Ils sont basés sur les labels originaux de Flair#1 et leur description détaill
 
 - La classe 'Artificiel' est plus facile à prédire que la classe 'Végétal'
 - L'exercice proposé serait centré sur la prédiction parcelle par parcelle. Concrètement une parcelle représente un carré au sol de 1.6 m de coté, vu flouté.
-
-
-
-
 - Les images ne sont utilisée que pour la restitution visuelle des résultats et la compréhension du but global de la tâche.
 - Amenée dans le bon langage, l'enchainement:  
   - régression à une variable à choisir parmi RGB (la bonne est le canal bleu)
@@ -166,6 +162,7 @@ Ils sont basés sur les labels originaux de Flair#1 et leur description détaill
 - Les données sont de qualité proposées par un établissement dédié au service public (<https://www.ign.fr/institut/lign-cartographe-du-service-public>).
 
 ### exemples de restitution d'une inférence de 'Artificiel' sur une parcelle
+
 ![Exemple de restitution d'une inférence de 'Artificiel' sur une parcelle](./img/restitution_true.png)
 
 ![Exemple de restitution d'une inférence de 'Artificiel' sur une parcelle](./img/restitution_false.png)
