@@ -4,13 +4,14 @@
 
 - télécharger les données voulues sur le [site de l'IGNF](https://ignf.github.io/FLAIR/)
 - il faut au minimum le dataset toy et les metadonnées `aerial`
-- décompresser les fichiers zip images et labels voulus (e.g. dans le répertoire `[racine du projet]/data/toy` ou `[racine du projet]/data/full`)
+- décompresser les fichiers zip images et labels voulus (e.g. dans le répertoire [`[racine du projet]/data/toy`](./data/toy) ou [`[racine du projet]/data/test`](./data/test)
 - placer de même pour les métadonnées `aerial`
-- renseigner l'emplacement des données dans le fichier `[racine du projet]/config/config.yml`
+- renseigner l'emplacement des données dans le fichier [`[racine du projet]/config/config.yml`](./config/config.yml)
 
 
 ## Configuration
-- Toutes les metadonnées doivent autant que possible être stockées dans le fichier `[racine du projet]/config/config.yaml`.
+
+- Toutes les metadonnées doivent autant que possible être stockées dans le fichier [`[racine du projet]/config/config.yml`](./config/config.yml).
 
 ## Working in containers
 
@@ -43,3 +44,13 @@
         http://127.0.0.1:8888/lab?token=dfba5c534dc12f4f0440a3afd221b908fb52025d87a96b99  
   [...]
   ```
+
+  ### To convert markdown to pdf (or docx or ...) :
+
+  ```bash
+  docker run --rm -it \
+     --volume "`pwd`:/data" \
+     --user `id -u`:`id -g`  \
+      pandoc/latex:2.6 /data/README.md -o glossary.pdf
+  ```
+  

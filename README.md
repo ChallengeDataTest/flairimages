@@ -26,7 +26,7 @@ DOI:https://doi.org/10.13140/RG.2.2.30183.73128/1
 
 ## Obtenir les données, setup
 
-voir ce [fichier](./img/README_SETUP.MD)
+voir ce [fichier](./README_SETUP.MD)
 
 ## Description des données
 - images: fichiers IMG_[id].tif à 5 canaux (RGB + infrarouge + élévation)
@@ -163,6 +163,6 @@ Ils sont basés sur les labels originaux de Flair#1 et leur description détaill
 
 ### exemples de restitution d'une inférence de 'Artificiel' sur une parcelle
 
-![Exemple de restitution d'une inférence de 'Artificiel' sur une parcelle](./img/restitution_true.png)
+![Exemple de restitution d'une inférence de 'Artificiel:VRAI' sur une parcelle](./img/restitution_true.png)
 
-![Exemple de restitution d'une inférence de 'Artificiel' sur une parcelle](./img/restitution_false.png)
+![Exemple de restitution d'une inférence de 'Artificiel:VRAI' sur une parcelle](./img/restitution_false.png)
