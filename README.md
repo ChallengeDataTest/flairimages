@@ -55,7 +55,7 @@ Ils sont basés sur les labels originaux de Flair#1 et leur description détaill
 ### Downsampling
 
 - Pour ce projet les images et masques sont downsamplés par un facteur 8x8 (défini dans le [fichier de configuration](./config/config.yml)) pour réduire la taille des données
-- Un pixel représente alors un carré de 1.6 m de coté
+- Un pixel représente alors une parcelle de 1.6 m de coté
 - avant:  
 ![Exemple de dowsampling avant](./img/down_sampled_no.png)
 - après:  
@@ -143,22 +143,29 @@ Ils sont basés sur les labels originaux de Flair#1 et leur description détaill
 
 - La régression a visiblement des difficulté à classer les étendues aquatiques en non-végétal.
 
-## Conclusion
+## Exercice proposé
+
 - La classe 'Artificiel' est plus facile à prédire que la classe 'Végétal'
-- Amenée dans le bon langage, l'enchainement 
+- L'exercice proposé serait centré sur la prédiction parcelle par parcelle. Concrètement une parcelle représente un carré au sol de 1.6 m de coté, vu flouté.
+
+
+
+
+- Les images ne sont utilisée que pour la restitution visuelle des résultats et la compréhension du but global de la tâche.
+- Amenée dans le bon langage, l'enchainement:  
   - régression à une variable à choisir parmi RGB (la bonne est le canal bleu)
   - régression à deux variables à choisir parmi RGB (R+B ou G+B sont bons)
   - régression R+G+B  
 
-peut interesser les élèves, avec un feed-back visuel immédiat.
+  peut interesser les élèves, avec un feed-back visuel immédiat.
 
-- L'approche pixel par pixel permet d'introduire des notions mathématiques de base: seuil de séparation, droite de séparation, etc. sans se préoccuper de géométrie des images.  
-- Le sens concret est qu'un pixels représente un carré au sol de 1.6 m de coté, regardé flouté.
+- L'approche parcelle par parcelle permet d'introduire des notions mathématiques de base: seuil de séparation, droite de séparation, etc. sans se préoccuper de géométrie des images.  
 
 - L'artificialisation des sols est un sujet d'actualité.
 
-  
+- Les données sont de qualité proposées par un établissement dédié au service public (<https://www.ign.fr/institut/lign-cartographe-du-service-public>).
 
+### exemples de restitution d'une inférence de 'Artificiel' sur une parcelle
+![Exemple de restitution d'une inférence de 'Artificiel' sur une parcelle](./img/restitution_true.png)
 
-
-
+![Exemple de restitution d'une inférence de 'Artificiel' sur une parcelle](./img/restitution_false.png)
