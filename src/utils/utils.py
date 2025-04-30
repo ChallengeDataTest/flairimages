@@ -249,7 +249,7 @@ def make_nomenclature_html(conf:dict, output_file:Path=None):
         color = colors[id]
         artificial = 'X' if id in artificial_classes else ""
         vegetal = 'X' if id in vegetal_classes else ""
-        out+=f"<tr>"
+        out+="<tr>"
         out+=f"<td>{id}</td><td>{label}</td>"
         out+=f"<td><span style=\"color:{color}; font-size: 20px;\">■</span> {color}</td>"
         out+=f"<td>{artificial}</td>"
