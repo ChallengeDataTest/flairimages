@@ -24,7 +24,8 @@ image_extension: '.tif'
 image_shape: [512, 512, 5]
 
 # dimension  downsample factor for the image collection
-collection_downsample: 8
+collection_downsample: 1 # 8
+collection_sample_ratio: 0.05
 
 
 

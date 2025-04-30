@@ -149,9 +149,12 @@ def make_image_collection(conf: dict,
         max = file_names.shape[0]
     assert(max > 0)
     
-    n_to_read = min(max, len(file_names))
     
+    
+    n_to_read = min(max, len(file_names))
+        
     if sample:
+        n_to_read = int(n_to_read * conf['collection_sample_ratio'])
         file_names = file_names.sample(n_to_read, replace=False)
     else:
         file_names = file_names.head(n_to_read) 
@@ -362,7 +365,8 @@ def fast_down_sample(large_images: np.array, by: int, method='max') -> np.array:
     # check by is a positive  integer 
     if int(by) != by  or by < 1:
         raise ValueError("Downsampling factor must be an integer power of 2")
-
+    if by == 1:
+        return large_images.copy()
     if len(large_images.shape) != 4:
         raise ValueError("(n_image,W,H,n_channels) shape expected")
     # large image array is shape (1,128, 128, 3)
